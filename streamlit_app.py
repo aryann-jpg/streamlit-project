@@ -3,7 +3,6 @@ import numpy as np
 import joblib
 import base64
 import pandas as pd
-import matplotlib.pyplot as plt
 
 # ==============================
 # Page Configuration
@@ -53,25 +52,13 @@ set_background("background.png")
 # ==============================
 model = joblib.load("career_longevity_gbt_model.pkl")
 
-# Feature names MUST match training order
-feature_names = [
-    "Games Played",
-    "Minutes Per Game",
-    "Points Per Game",
-    "Rebounds Per Game",
-    "Assists Per Game",
-    "Steals Per Game",
-    "Blocks Per Game",
-    "Turnovers Per Game"
-]
-
 # ==============================
-# App Title
+# App Title & Description
 # ==============================
 st.title("🏀 NBA Career Longevity Predictor")
 st.write(
-    "Predict how long an NBA player is likely to last in the league "
-    "based on early-career performance."
+    "Predict both whether an NBA player will have a career lasting **≥ 5 years** "
+    "and estimate the likely number of years played based on early-career performance."
 )
 
 st.divider()
@@ -95,43 +82,30 @@ st.divider()
 # ==============================
 if st.button("🔮 Predict Career Longevity"):
 
-    input_data = np.array([[
-        games_played,
-        minutes,
-        points,
-        rebounds,
-        assists,
-        steals,
-        blocks,
-        turnovers
-    ]])
+    # Arrange features in SAME order as training
+    input_data = np.array([[games_played, minutes, points, rebounds,
+                            assists, steals, blocks, turnovers]])
 
-    prediction = model.predict(input_data)[0]
+    # Predict target (≥5 years)
+    target_prediction = model.predict(input_data)[0]
     prob_long = model.predict_proba(input_data)[0][1]
 
-    st.divider()
-
-    # ==============================
-    # Career Length Estimation
-    # ==============================
-    if prediction == 1:
+    # Estimate career length (heuristic based on probability)
+    if target_prediction == 1:
         estimated_years = int(5 + prob_long * 10)  # 5–15 years
+        st.success("✅ **Prediction: Career ≥ 5 Years**")
     else:
         estimated_years = max(1, int(prob_long * 5))  # 1–4 years
+        st.error("❌ **Prediction: Career < 5 Years**")
 
-    # ==============================
-    # Output (YOUR REQUESTED FORMAT)
-    # ==============================
-    st.subheader("🏀 Prediction Result")
-    st.success(f"**Prediction: {estimated_years} years played in the NBA**")
+    st.subheader("📊 Prediction Details")
+    st.write(f"**Estimated Career Length:** {estimated_years} years")
     st.write(f"**Model Confidence:** {prob_long:.2%}")
 
     st.caption(
         "⚠️ Career length is an estimate derived from prediction probability, "
         "not a direct regression output."
     )
-
-
 
 # ==============================
 # Footer
